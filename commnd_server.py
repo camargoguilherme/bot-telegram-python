@@ -5,12 +5,14 @@ from wakeonlan import send_magic_packet
 from telebot import types
 from config import bot
 
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
+TELEGRAM_CHAT_ID = int(os.environ.get('TELEGRAM_CHAT_ID'))
 
 def config_commands_server():
   #Command /server
   @bot.message_handler(commands=['server'])
   def server(message): 
+    logging.info(message.chat.id)
+    logging.info(TELEGRAM_CHAT_ID)
     if message.chat.id == TELEGRAM_CHAT_ID:
       markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
       status = types.KeyboardButton("Status")
@@ -51,7 +53,7 @@ def config_commands_server():
   @bot.message_handler(func=lambda message: message.text == "Disk Space")
   def disk_space(message):
     if message.chat.id == TELEGRAM_CHAT_ID:
-      process = subprocess.Popen(['df', '-h' '/dev/sd*1'],
+      process = subprocess.Popen(['df', '-h' '/dev/sd* /dev/mapper/ubuntu--vg-ubuntu--lv'],
                       stdout=subprocess.PIPE, 
                       stderr=subprocess.PIPE)
       stdout, stderr = process.communicate()

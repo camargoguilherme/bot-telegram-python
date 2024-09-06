@@ -25,7 +25,7 @@ if len(missing_values) > 0:
 
 bot = telebot.TeleBot(os.environ.get('TELEGRAM_BOT_TOKEN'))
 
-bot.set_my_commands([
-  types.BotCommand('/start', 'Start Command'),
-  types.BotCommand('/server', 'Server Command'),
-])
+# bot.set_my_commands([
+#   types.BotCommand('/start', 'Start Command'),
+#   types.BotCommand('/server', 'Server Command'),
+# ])
