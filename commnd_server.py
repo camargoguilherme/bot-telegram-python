@@ -1,11 +1,18 @@
 import logging
 import subprocess
+import glob
 import os
 from wakeonlan import send_magic_packet
 from telebot import types
 from config import bot
 
 TELEGRAM_CHAT_ID = int(os.environ.get('TELEGRAM_CHAT_ID'))
+
+# Obtém a variável de ambiente 'DEVICES'
+DEVICES = []
+for device in os.getenv('DEVICES').split(','):
+  # Expande os padrões usando glob
+  DEVICES.extend(glob.glob(device))
 
 def config_commands_server():
   #Command /server
@@ -37,7 +44,7 @@ def config_commands_server():
       callback_message = ''
       
       if len(stderr) > 0:
-        callback_message = '😭 Ocorreu um erro ao verificar status do servidor 😭 '
+        callback_message = '😭 Ocorreu um erro ao verificar status do servidor 😭 {}'.format(stderr)
       else:
         # Se não houve erro, verifica a resposta do ping
         if "TTL" in str(stdout):
@@ -53,16 +60,18 @@ def config_commands_server():
   @bot.message_handler(func=lambda message: message.text == "Disk Space")
   def disk_space(message):
     if message.chat.id == TELEGRAM_CHAT_ID:
-      process = subprocess.Popen(['df', '-h' '/dev/sd* /dev/mapper/ubuntu--vg-ubuntu--lv'],
+      process = subprocess.Popen(['df', '-h'] + DEVICES,
                       stdout=subprocess.PIPE, 
                       stderr=subprocess.PIPE)
       stdout, stderr = process.communicate()
       callback_message = ''
       
       if len(stderr) > 0:
-        callback_message = '😭 Ocorreu um erro ao verificar espaço em disco 😭'
+        callback_message = '😭 Ocorreu um erro ao verificar espaço em disco 😭 {}'.format(stderr)
       else:
-        callback_message = f"<pre>{str(stdout)}<pre>"
+        # Decodifica e remove espaços extras no início e fim
+        stdout_decoded = stdout.decode().strip()
+        callback_message = f"<pre>{stdout_decoded}</pre>"
         
       bot.send_message(message.chat.id, callback_message, parse_mode='HTML')
     else:
@@ -72,9 +81,20 @@ def config_commands_server():
   @bot.message_handler(func=lambda message: message.text == "Wake Server")
   def wake_server(message):
     if message.chat.id == TELEGRAM_CHAT_ID:
-      wake_on_lan_macs = os.environ.get('WAKE_ON_LAN_MACS').split(',')
+      wake_on_lan_macs = os.environ.get('WAKE_ON_LAN_MACS_SERVERS').split(',')
       send_magic_packet(*wake_on_lan_macs)
       callback_message = '👌 Ligando Servidor... 👌'
+          
+      bot.send_message(message.chat.id, callback_message)
+    else:
+      bot.reply_to(message, "🤨 Desculpe, você não tem permissão para executar os comandos. 😛")
+
+   @bot.message_handler(func=lambda message: message.text == "Wake My PC")
+  def wake_server(message):
+    if message.chat.id == TELEGRAM_CHAT_ID:
+      wake_on_lan_macs = os.environ.get('WAKE_ON_LAN_MACS_MY_PC').split(',')
+      send_magic_packet(*wake_on_lan_macs)
+      callback_message = '👌 Ligando Meu Computador... 👌'
           
       bot.send_message(message.chat.id, callback_message)
     else:
